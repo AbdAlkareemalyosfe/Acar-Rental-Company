@@ -4,6 +4,7 @@ using Microsoft.Extensions.Localization;
 using RentalCompany.DataTransferObject.CarDto;
 using RentalCompany.Models.CarModels;
 using RentalCompany.Repository.Car_Repository;
+using RentalCompany.Repository.Pagination;
 using RentalCompany.Service.Resources;
 using RentalCompany.SharedKernel.Operation_Result;
 using RentalCompany.SharedKernel.OrderingEnum;
@@ -68,7 +69,7 @@ namespace RentalCompany.Service.CarService
             OperationResult<CarResponse> operation = new OperationResult<CarResponse>();
             try
             {
-                var results = _carRepository.GetTableAsTracking();
+                var results = await _carRepository.GetTableAsTracking().Include(x => x.driver).Include(x => x.customer).ToPaginatedListAsync(pageNumber, PagSize);
 
                 if (results == null)
                 {
@@ -77,8 +78,9 @@ namespace RentalCompany.Service.CarService
                     return operation;
                 }
                 if (Available)
-                    results = results.Where(x => !x.CustomerId.HasValue);
-                var carMapping = _mapper.Map<IEnumerable<CarResponse>>(results.Include(d => d.driver).Include(c => c.customer));
+                    results.Data = results.Data.Where(x => !x.CustomerId.HasValue).ToList();
+
+                var carMapping = _mapper.Map<IEnumerable<CarResponse>>(results.Data);
                 operation.OperationResultType = OperationResultTypes.Success;
                 operation.Message = _stringLocalizer[SharedResourcesKeys.Success];
                 operation.RangeResults = carMapping;
