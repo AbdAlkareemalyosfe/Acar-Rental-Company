@@ -60,6 +60,7 @@ builder.Services.AddLocalization(opt =>
 {
     opt.ResourcesPath = "";
 });
+builder.Services.AddSingleton<IHttpContextAccessor, HttpContextAccessor>();
 builder.Services.Configure<RequestLocalizationOptions>(options =>
 {
     List<CultureInfo> supportedCultures = new List<CultureInfo>

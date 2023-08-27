@@ -1,25 +1,55 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.AspNetCore.Http;
+using Microsoft.EntityFrameworkCore;
 using RentalCompany.Models.Base;
 using RentalCompany.SqlServer;
 
 namespace RentalCompany.Repository.BaseRepository
 {
-    public class RepositoryBase<TEntity> : IRepositoryBase<TEntity> where TEntity : BaseEntity
+    public abstract class RepositoryBase
     {
         #region  Vars / Props
 
         protected readonly ApplicationDbContext _context;
-
-
+        protected readonly IHttpContextAccessor _httpContextAccessor;
         #endregion
 
         #region Constructor 
-        public RepositoryBase(ApplicationDbContext context)
+        public RepositoryBase(ApplicationDbContext context, IHttpContextAccessor httpContextAccessor = null)
         {
             _context = context;
+            _httpContextAccessor = httpContextAccessor;
 
         }
-        #endregion
+        public string AcceptLanguageHeader
+        {
+            get { return GetAcceptedLanguage(); }
+        }
+
+        public string GetAcceptedLanguage()
+        {
+            var acceptLanguageHeader = "";
+            if (_httpContextAccessor.HttpContext != null)
+            {
+                acceptLanguageHeader = _httpContextAccessor.HttpContext.Request
+                   .Headers["accept-language"];
+            }
+
+            if (acceptLanguageHeader.ToString().StartsWith("ar"))
+            {
+                return "ar";
+            }
+            return "en";
+
+        }
+
+    }
+    #endregion
+    public abstract class RepositoryBase<TEntity> : RepositoryBase, IRepositoryBase<TEntity> where TEntity : BaseEntity
+    {
+        protected RepositoryBase(ApplicationDbContext context) : base(context)
+        {
+        }
+
 
         #region Actions
         public async Task<TEntity> AddAsync(TEntity entity)
@@ -72,8 +102,8 @@ namespace RentalCompany.Repository.BaseRepository
             return _context.Set<TEntity>().AnyAsync(i => i.Id == id);
         }
 
-
-
-        #endregion
     }
+
+    #endregion
 }
+
